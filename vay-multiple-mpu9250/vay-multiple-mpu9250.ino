@@ -49,9 +49,15 @@ THE SOFTWARE.
 // Define the array of leds
 CRGB leds[NUM_LEDS];
 
-int darkness = 255;
-bool plantTouched = false;
-int fadeAmount = 5;  // Set the amount to fade I usually do 5, 10, 15, 20, 25 etc even up to 255.
+//=============================================================================
+//                            DEFINING LOGIC VARS
+//=============================================================================
+//
+
+const int sensorNumber = 2;
+int darkness[sensorNumber];
+int plantTouched[sensorNumber];
+int fadeAmount[sensorNumber];  // Set the amount to fade I usually do 5, 10, 15, 20, 25 etc even up to 255.
 int count = 0;
 
 
@@ -131,7 +137,6 @@ int endTime;
 // AD0 high = 0x69
 MPU9150 accelGyroMag;
 
-const int sensorNumber = 2;
 int16_t ax, ay[sensorNumber], az;
 int16_t ayCalibrated[sensorNumber];
 int16_t ayCalibrationValue[sensorNumber];
@@ -157,15 +162,22 @@ bool blinkState = false;
 
 void setup() {
 
-FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
-
-#ifdef SerialPrint
-#endif
-
-delay(200);
-
-// SD Card Logger Setup
-//----------------------------------------------------------------------------------
+  FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
+  
+  // initialize sensor variables
+  
+  for(int x = 0; x < sensorNumber; x++)
+  {
+    darkness[x] = 255;
+    plantTouched[x] = 0;
+    fadeAmount[x] = 5; 
+  }
+  
+  
+  delay(200);
+  
+  // SD Card Logger Setup
+  //----------------------------------------------------------------------------------
 
   Serial.begin(38400);
   //Serial.println("test with init");
@@ -208,8 +220,8 @@ uint8_t i=0; // reset for SD Card logging
 //=============================================================================
 
 void loop() {
-startTime = millis();
-count ++;
+  startTime = millis();
+  count ++;
 
 
  for (int t = 0; t < sensorNumber; t++)
@@ -227,71 +239,78 @@ count ++;
     //these methods (and a few others) are also available
     //accelGyroMag.getAcceleration(&ax, &ay, &az);
     //accelGyroMag.getRotation(&gx, &gy, &gz);
-if (startStream)
-{ 
-
-#ifdef SerialPrint
-    // display tab-separated accel/gyro/mag x/y/z values
-    Serial.print("count: ");
-    Serial.print(count); Serial.print("\t");
-    Serial.print("ayCalibrated: ");
-    Serial.print(ayCalibrated[t]); Serial.print("\t");
-    /*
-    Serial.print("ay: ");
-    Serial.print(ay); Serial.print("\t");
-   
-    Serial.print("ax: ");
-    Serial.print(ax); Serial.print("\t");
-    Serial.print("ay: ");
-    Serial.print(ay); Serial.print("\t");
-    Serial.print("az: ");
-    Serial.print(az); Serial.print("\t");
-    Serial.print("tot: ");
-    Serial.print(ax+ay+az); Serial.print("\t");
-    */
-    //Serial.print(gx); Serial.print("\t");
-    //Serial.print(gy); Serial.print("\t");
-    //Serial.print(gz); Serial.print("\t");
-    //Serial.print(int(mx)); Serial.print("\t");
-    //Serial.print(int(my)); Serial.print("\t");
-    //Serial.print(int(mz)); Serial.print("\t");
-    if(t == sensorNumber - 1) {
-    Serial.println();
+    if (startStream)
+    { 
+    
+    #ifdef SerialPrint
+        // display tab-separated accel/gyro/mag x/y/z values
+        Serial.print("count: ");
+        Serial.print(count); Serial.print("\t");
+        Serial.print("ayCalibrated: ");
+        Serial.print(ayCalibrated[t]); Serial.print("\t");
+        /*
+        Serial.print("ay: ");
+        Serial.print(ay); Serial.print("\t");
+       
+        Serial.print("ax: ");
+        Serial.print(ax); Serial.print("\t");
+        Serial.print("ay: ");
+        Serial.print(ay); Serial.print("\t");
+        Serial.print("az: ");
+        Serial.print(az); Serial.print("\t");
+        Serial.print("tot: ");
+        Serial.print(ax+ay+az); Serial.print("\t");
+        */
+        //Serial.print(gx); Serial.print("\t");
+        //Serial.print(gy); Serial.print("\t");
+        //Serial.print(gz); Serial.print("\t");
+        //Serial.print(int(mx)); Serial.print("\t");
+        //Serial.print(int(my)); Serial.print("\t");
+        //Serial.print(int(mz)); Serial.print("\t");
+        
+      #endif
     }
     
-  #endif
-}
-if (ayCalibrated > 800) {
-  plantTouched = true;
-}
+    if (ayCalibrated[t] > 800) {
+      plantTouched[t] = 1;
+    }
+    
+    if (plantTouched[t] == 1) {
+    
+      darkness[t] = darkness[t] - fadeAmount[t];
+      // reverse the direction of the fading at the ends of the fade:
+      if( darkness[t] <= 5) {
+        fadeAmount[t] = -fadeAmount[t] ;
+      }
+      if (darkness[t] > 255) {
+        plantTouched[t] = 0;
+        darkness[t] = 255;
+        fadeAmount[t] = -fadeAmount[t] ;
+      }
+    
+    
+       for(int i = 0; i < NUM_LEDS; i++ )
+       {
+       leds[i+t*NUM_LEDS].setRGB(0,255,0);  // setRGB functions works by setting
+                                 // (RED value 0-255, GREEN value 0-255, BLUE value 0-255)
+                                 // RED = setRGB(255,0,0)
+                                 // GREEN = setRGB(0,255,0)
+       leds[i+t*NUM_LEDS].fadeLightBy(darkness[t]);
 
-if (plantTouched == true) {
+       
+      }
+      FastLED.show();
 
-  darkness = darkness - fadeAmount;
-  // reverse the direction of the fading at the ends of the fade:
-  if( darkness <= 5) {
-    fadeAmount = -fadeAmount ;
+      Serial.print("i+t*NUM_LEDS: ");
+      Serial.print(i+t*NUM_LEDS); Serial.print("\t");
+      Serial.print("plantTouched: ");
+      Serial.print(plantTouched[t]); Serial.print("\t");
+      Serial.print("darkness: ");
+      Serial.print(darkness[t]); Serial.print("\t");
   }
-  //Serial.print(darkness); Serial.print(",   ");
-  if (darkness > 255) {
-    plantTouched = false;
-    darkness = 255;
-    fadeAmount = -fadeAmount ;
+  if(t == sensorNumber - 1) {
+    Serial.println();
   }
-    //Serial.print(darkness); Serial.print("\t");
-
-
-   for(int i = 0; i < NUM_LEDS; i++ )
-   {
-   leds[i+t*NUM_LEDS].setRGB(0,255,0);  // setRGB functions works by setting
-                             // (RED value 0-255, GREEN value 0-255, BLUE value 0-255)
-                             // RED = setRGB(255,0,0)
-                             // GREEN = setRGB(0,255,0)
-   leds[i+t*NUM_LEDS].fadeLightBy(darkness);
-  }
-  FastLED.show();
-  // The summed up delay in the for loop sets speed of the fade. I usually do from 5-75 but you can always go higher.
-}
 }
 
 if (startStream)
