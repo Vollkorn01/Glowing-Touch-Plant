@@ -37,7 +37,8 @@ THE SOFTWARE.
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 10
+#define NUM_LEDS 50
+# define ACTIVE_LEDS 10
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -287,26 +288,29 @@ void loop() {
         darkness[t] = 255;
         fadeAmount[t] = -fadeAmount[t] ;
       }
-    
-    
-       for(int i = 0; i < NUM_LEDS; i++ )
+      //leds[t].setRGB(0,255,0);
+      //leds[t].fadeLightBy(darkness[t]);
+      
+       for(int i = 0; i < ACTIVE_LEDS; i++ )
        {
-       leds[i+t*NUM_LEDS].setRGB(0,255,0);  // setRGB functions works by setting
+       leds[i+t*ACTIVE_LEDS].setRGB(0,255,0);  // setRGB functions works by setting
                                  // (RED value 0-255, GREEN value 0-255, BLUE value 0-255)
                                  // RED = setRGB(255,0,0)
                                  // GREEN = setRGB(0,255,0)
-       leds[i+t*NUM_LEDS].fadeLightBy(darkness[t]);
-
-       
+       leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
+       Serial.print("LEDS: ");
+       Serial.print(i+t*ACTIVE_LEDS); Serial.print("\t");
+       FastLED.show();
       }
-      FastLED.show();
+      
+      //FastLED.show();
 
-      Serial.print("i+t*NUM_LEDS: ");
-      Serial.print(i+t*NUM_LEDS); Serial.print("\t");
-      Serial.print("plantTouched: ");
-      Serial.print(plantTouched[t]); Serial.print("\t");
-      Serial.print("darkness: ");
-      Serial.print(darkness[t]); Serial.print("\t");
+      //Serial.print("i+t*NUM_LEDS: ");
+      //Serial.print(i+t*NUM_LEDS); Serial.print("\t");
+      //Serial.print("plantTouched: ");
+      //Serial.print(plantTouched[t]); Serial.print("\t");
+      //Serial.print("darkness: ");
+      //Serial.print(darkness[t]); Serial.print("\t");
   }
   if(t == sensorNumber - 1) {
     Serial.println();
