@@ -37,8 +37,8 @@ THE SOFTWARE.
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 50
-# define ACTIVE_LEDS 10
+#define NUM_LEDS 15
+# define ACTIVE_LEDS 15
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -55,7 +55,7 @@ CRGB leds[NUM_LEDS];
 //=============================================================================
 //
 
-const int sensorNumber = 2;
+const int sensorNumber = 1;
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
 int fadeAmount[sensorNumber];  // Set the amount to fade I usually do 5, 10, 15, 20, 25 etc even up to 255.
@@ -75,42 +75,13 @@ int count = 0;
 //#define BluetoothTransmit // uncomment this to not transmit via bluetooth
 
 // define Serial Output
-#define SerialPrint  // uncomment this to not print in serial monitor
+//#define SerialPrint  // uncomment this to not print in serial monitor
 
 // define SD Card Logger
 //#define Adalogger  // uncomment this to not print on sd card
 
 // starts logging / streaming when receiving start signal from App
   bool startStream = true;
-
-// SD Card Logger Init
-//---------------------------------------------
-
-#ifdef Adalogger
-
-  #include <SPI.h>
-  #include <SD.h>
-  
-  // Set the pins used
-  #define cardSelect 4
-  File logfile;
-  // blink out an error code
-  void error(uint8_t errno) {
-    while(1) {
-      uint8_t i;
-      for (i=0; i<errno; i++) {
-        digitalWrite(13, HIGH);
-        delay(100);
-        digitalWrite(13, LOW);
-        delay(100);
-      }
-      for (i=errno; i<10; i++) {
-        delay(200);
-      }
-    }
-  }
-#endif
-int flushcount = 0;
 
 // Labeling Initialization
 int exercise = 99;
@@ -171,7 +142,7 @@ void setup() {
   {
     darkness[x] = 255;
     plantTouched[x] = 0;
-    fadeAmount[x] = 5; 
+    fadeAmount[x] = 20; 
   }
   
   
@@ -240,8 +211,6 @@ void loop() {
     //these methods (and a few others) are also available
     //accelGyroMag.getAcceleration(&ax, &ay, &az);
     //accelGyroMag.getRotation(&gx, &gy, &gz);
-    if (startStream)
-    { 
     
     #ifdef SerialPrint
         // display tab-separated accel/gyro/mag x/y/z values
@@ -270,9 +239,8 @@ void loop() {
         //Serial.print(int(mz)); Serial.print("\t");
         
       #endif
-    }
     
-    if (ayCalibrated[t] > 800) {
+    if (ayCalibrated[t] > 1500) {
       plantTouched[t] = 1;
     }
     
@@ -280,8 +248,9 @@ void loop() {
     
       darkness[t] = darkness[t] - fadeAmount[t];
       // reverse the direction of the fading at the ends of the fade:
-      if( darkness[t] <= 5) {
+      if( darkness[t] <= 0) {
         fadeAmount[t] = -fadeAmount[t] ;
+        darkness[t] = 0;
       }
       if (darkness[t] > 255) {
         plantTouched[t] = 0;
@@ -293,14 +262,17 @@ void loop() {
       
        for(int i = 0; i < ACTIVE_LEDS; i++ )
        {
-       leds[i+t*ACTIVE_LEDS].setRGB(0,255,0);  // setRGB functions works by setting
+       leds[i+t*ACTIVE_LEDS].setRGB(0,255,255);  // setRGB functions works by setting
                                  // (RED value 0-255, GREEN value 0-255, BLUE value 0-255)
                                  // RED = setRGB(255,0,0)
                                  // GREEN = setRGB(0,255,0)
        leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
-       Serial.print("LEDS: ");
-       Serial.print(i+t*ACTIVE_LEDS); Serial.print("\t");
        FastLED.show();
+       
+       #ifdef SerialPrint
+          Serial.print("LEDS: ");
+          Serial.print(i+t*ACTIVE_LEDS); Serial.print("\t");
+       #endif
       }
       
       //FastLED.show();
@@ -313,20 +285,21 @@ void loop() {
       //Serial.print(darkness[t]); Serial.print("\t");
   }
   if(t == sensorNumber - 1) {
-    Serial.println();
+    #ifdef SerialPrint
+      Serial.println();
+    #endif
+
   }
 }
 
-if (startStream)
-{
 // blink LED to indicate activity
 blinkState = !blinkState;
 digitalWrite(LED_PIN, blinkState);
-}
 
 endTime = millis();  // THIS DOESNT NECESSARILY MAKES SENSE -> DATAPOINTS ARENT LINEARLY DISTRIBUTED
 if (endTime - startTime < 33)
 {
-  delay(33 - (endTime - startTime));
+  //delay(33 - (endTime - startTime));
+  //delay(5);
 }
 }
