@@ -37,9 +37,9 @@ THE SOFTWARE.
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 45
+#define NUM_LEDS 75
 #define ACTIVE_LEDS 15
-#define BRIGHTNESS 64
+#define BRIGHTNESS 128
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -56,7 +56,7 @@ CRGB leds[NUM_LEDS];
 //=============================================================================
 //
 
-const int sensorNumber = 3;
+const int sensorNumber = 5;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
@@ -77,7 +77,7 @@ int count = 0;
 //#define BluetoothTransmit // uncomment this to not transmit via bluetooth
 
 // define Serial Output
-#define SerialPrint  // uncomment this to not print in serial monitor
+//#define SerialPrint  // uncomment this to not print in serial monitor
 
 // define SD Card Logger
 //#define Adalogger  // uncomment this to not print on sd card
