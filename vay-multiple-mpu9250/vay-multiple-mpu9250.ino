@@ -37,8 +37,9 @@ THE SOFTWARE.
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 15
-# define ACTIVE_LEDS 15
+#define NUM_LEDS 45
+#define ACTIVE_LEDS 15
+#define BRIGHTNESS 64
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -55,7 +56,8 @@ CRGB leds[NUM_LEDS];
 //=============================================================================
 //
 
-const int sensorNumber = 1;
+const int sensorNumber = 3;
+const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
 int fadeAmount[sensorNumber];  // Set the amount to fade I usually do 5, 10, 15, 20, 25 etc even up to 255.
@@ -75,7 +77,7 @@ int count = 0;
 //#define BluetoothTransmit // uncomment this to not transmit via bluetooth
 
 // define Serial Output
-//#define SerialPrint  // uncomment this to not print in serial monitor
+#define SerialPrint  // uncomment this to not print in serial monitor
 
 // define SD Card Logger
 //#define Adalogger  // uncomment this to not print on sd card
@@ -135,10 +137,11 @@ bool blinkState = false;
 void setup() {
 
   FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
+  FastLED.setBrightness( BRIGHTNESS );
   
   // initialize sensor variables
   
-  for(int x = 0; x < sensorNumber; x++)
+  for(int x = startingSensorNumber; x < sensorNumber; x++)
   {
     darkness[x] = 255;
     plantTouched[x] = 0;
@@ -161,7 +164,7 @@ void setup() {
     // join I2C bus (I2Cdev library doesn't do this automatically)
     Wire.begin();
     //Serial.println("wire began");
-    for(int x = 0; x < sensorNumber; x++)
+    for(int x = startingSensorNumber; x < sensorNumber; x++)
     {
       tcaselect(x); // make a loop for all sensors here!
       Wire.beginTransmission(MPU_addr);
@@ -196,7 +199,7 @@ void loop() {
   count ++;
 
 
- for (int t = 0; t < sensorNumber; t++)
+ for (int t = startingSensorNumber; t < sensorNumber; t++)
    {
     if (count == 100) {
       ayCalibrationValue[t] = ay[t];
@@ -214,8 +217,8 @@ void loop() {
     
     #ifdef SerialPrint
         // display tab-separated accel/gyro/mag x/y/z values
-        Serial.print("count: ");
-        Serial.print(count); Serial.print("\t");
+        //Serial.print("count: ");
+        //Serial.print(count); Serial.print("\t");
         Serial.print("ayCalibrated: ");
         Serial.print(ayCalibrated[t]); Serial.print("\t");
         /*
@@ -262,7 +265,7 @@ void loop() {
       
        for(int i = 0; i < ACTIVE_LEDS; i++ )
        {
-       leds[i+t*ACTIVE_LEDS].setRGB(0,255,255);  // setRGB functions works by setting
+       leds[i+t*ACTIVE_LEDS].setRGB(0,255,0);  // setRGB functions works by setting
                                  // (RED value 0-255, GREEN value 0-255, BLUE value 0-255)
                                  // RED = setRGB(255,0,0)
                                  // GREEN = setRGB(0,255,0)
