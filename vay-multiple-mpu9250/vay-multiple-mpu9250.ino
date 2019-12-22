@@ -37,8 +37,8 @@ THE SOFTWARE.
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 75
-#define ACTIVE_LEDS 15
+#define NUM_LEDS 3
+#define ACTIVE_LEDS 3
 #define BRIGHTNESS 128
 
 
@@ -56,12 +56,13 @@ CRGB leds[NUM_LEDS];
 //=============================================================================
 //
 
-const int sensorNumber = 5;
+const int sensorNumber = 1;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
 int fadeAmount[sensorNumber];  // Set the amount to fade I usually do 5, 10, 15, 20, 25 etc even up to 255.
 int count = 0;
+int randNumber = 1; // for changing colors
 
 
 //=============================================================================
@@ -77,7 +78,7 @@ int count = 0;
 //#define BluetoothTransmit // uncomment this to not transmit via bluetooth
 
 // define Serial Output
-//#define SerialPrint  // uncomment this to not print in serial monitor
+#define SerialPrint  // uncomment this to not print in serial monitor
 
 // define SD Card Logger
 //#define Adalogger  // uncomment this to not print on sd card
@@ -163,7 +164,7 @@ void setup() {
 
     // join I2C bus (I2Cdev library doesn't do this automatically)
     Wire.begin();
-    //Serial.println("wire began");
+    Serial.println("wire began");
     for(int x = startingSensorNumber; x < sensorNumber; x++)
     {
       tcaselect(x); // make a loop for all sensors here!
@@ -175,12 +176,12 @@ void setup() {
     }
   
     // initialize device
-    //Serial.println("Initializing I2C devices...");
+    Serial.println("Initializing I2C devices...");
     accelGyroMag.initialize();
 
     // verify connection
-    //Serial.println("Testing device connections...");
-    //Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
+    Serial.println("Testing device connections...");
+    Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
 
     // configure Arduino LED for
     pinMode(LED_PIN, OUTPUT);
@@ -221,6 +222,8 @@ void loop() {
         //Serial.print(count); Serial.print("\t");
         Serial.print("ayCalibrated: ");
         Serial.print(ayCalibrated[t]); Serial.print("\t");
+        Serial.print("ay: ");
+        Serial.print(ay[t]); Serial.print("\t");
         /*
         Serial.print("ay: ");
         Serial.print(ay); Serial.print("\t");
@@ -246,7 +249,6 @@ void loop() {
     if (ayCalibrated[t] > 1500) {
       plantTouched[t] = 1;
     }
-    
     if (plantTouched[t] == 1) {
     
       darkness[t] = darkness[t] - fadeAmount[t];
@@ -258,17 +260,28 @@ void loop() {
       if (darkness[t] > 255) {
         plantTouched[t] = 0;
         darkness[t] = 255;
-        fadeAmount[t] = -fadeAmount[t] ;
+        fadeAmount[t] = -fadeAmount[t];
+        randNumber = random(1,5); // randomly 1,2 or 3, for chaning colors
       }
-      //leds[t].setRGB(0,255,0);
-      //leds[t].fadeLightBy(darkness[t]);
-      
        for(int i = 0; i < ACTIVE_LEDS; i++ )
        {
-       leds[i+t*ACTIVE_LEDS].setRGB(0,255,0);  // setRGB functions works by setting
-                                 // (RED value 0-255, GREEN value 0-255, BLUE value 0-255)
-                                 // RED = setRGB(255,0,0)
-                                 // GREEN = setRGB(0,255,0)
+       switch (randNumber) {
+        case 1:
+          leds[i+t*ACTIVE_LEDS].setRGB(0,255,255); //pink
+          break;
+        case 2:
+          leds[i+t*ACTIVE_LEDS].setRGB(255,255,255); //white
+          break;
+        case 3:
+          leds[i+t*ACTIVE_LEDS].setRGB(0,0,255); //blue
+          break;
+        case 4:
+          leds[i+t*ACTIVE_LEDS].setRGB(0,255,0); //red
+          break;
+         
+        
+       };
+       
        leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
        FastLED.show();
        
@@ -303,6 +316,6 @@ endTime = millis();  // THIS DOESNT NECESSARILY MAKES SENSE -> DATAPOINTS ARENT 
 if (endTime - startTime < 33)
 {
   //delay(33 - (endTime - startTime));
-  //delay(5);
+  delay(50);
 }
 }
