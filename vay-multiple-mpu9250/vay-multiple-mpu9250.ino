@@ -29,6 +29,17 @@ THE SOFTWARE.
 ===============================================
 */
 
+//=============================================================================
+//                                   SETUP
+//=============================================================================
+
+void setup() {
+
+   pinMode(13, OUTPUT);
+  digitalWrite(13, true);
+  delay(2000);
+  digitalWrite(13, false);
+}
 
 //=============================================================================
 //                            LED STUFF
@@ -37,9 +48,9 @@ THE SOFTWARE.
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 3
-#define ACTIVE_LEDS 3
-#define BRIGHTNESS 128
+#define NUM_LEDS 105
+#define ACTIVE_LEDS 15
+#define BRIGHTNESS 64
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -56,7 +67,7 @@ CRGB leds[NUM_LEDS];
 //=============================================================================
 //
 
-const int sensorNumber = 1;
+const int sensorNumber = 7;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
@@ -70,26 +81,8 @@ int randNumber = 1; // for changing colors
 //=============================================================================
 //
 
-// README:
-// uncomment #define BluetoothTransmit, make bool readDate = true, change baudrate of serial1 to 38400
-// and change module to hc-05 in order to stream data to smartphone
-
-// define bluetooth output
-//#define BluetoothTransmit // uncomment this to not transmit via bluetooth
-
-// define Serial Output
-#define SerialPrint  // uncomment this to not print in serial monitor
-
-// define SD Card Logger
-//#define Adalogger  // uncomment this to not print on sd card
-
-// starts logging / streaming when receiving start signal from App
-  bool startStream = true;
-
 // Labeling Initialization
-int exercise = 99;
 #define LED_PIN 13
-int userNumber = 100;
 
 // Timing init
 int startTime;
@@ -112,9 +105,9 @@ int endTime;
 // AD0 high = 0x69
 MPU9150 accelGyroMag;
 
-int16_t ax, ay[sensorNumber], az;
-int16_t ayCalibrated[sensorNumber];
-int16_t ayCalibrationValue[sensorNumber];
+int16_t ax, ay, az, aTot[sensorNumber];
+int16_t aTotCalibrated[sensorNumber];
+int16_t aTotCalibrationValue[sensorNumber];
 int16_t gx, gy, gz;
 int16_t mx, my, mz;
 
@@ -128,14 +121,25 @@ void tcaselect(uint8_t i) {
   Wire.write(1 << i);
   Wire.endTransmission(); 
 }
-#define LED_PIN 13
 bool blinkState = false;
 
+uint8_t i=0; // reset for SD Card logging
+
+
 //=============================================================================
-//                                   SETUP
+//                                   LOOP
 //=============================================================================
 
-void setup() {
+bool startup = true;
+
+void loop() {
+
+if (startup == true) {
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, true);
+  delay(1000);
+  digitalWrite(LED_PIN, false);
+
 
   FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
   FastLED.setBrightness( BRIGHTNESS );
@@ -146,21 +150,14 @@ void setup() {
   {
     darkness[x] = 255;
     plantTouched[x] = 0;
-    fadeAmount[x] = 20; 
+    fadeAmount[x] = 5; 
   }
-  
-  
-  delay(200);
-  
-  // SD Card Logger Setup
-  //----------------------------------------------------------------------------------
 
   Serial.begin(38400);
   //Serial.println("test with init");
   //Serial1.begin(38400);   
   delay(300);                                                            
   //Serial.println("\r\nAnalog logger test");
-  pinMode(13, OUTPUT);
 
     // join I2C bus (I2Cdev library doesn't do this automatically)
     Wire.begin();
@@ -185,17 +182,12 @@ void setup() {
 
     // configure Arduino LED for
     pinMode(LED_PIN, OUTPUT);
-
+    digitalWrite(LED_PIN, true);
+    delay(1000);
+    digitalWrite(LED_PIN, false);
+    startup = false;
 }
-
-uint8_t i=0; // reset for SD Card logging
-
-
-//=============================================================================
-//                                   LOOP
-//=============================================================================
-
-void loop() {
+  
   startTime = millis();
   count ++;
 
@@ -203,15 +195,16 @@ void loop() {
  for (int t = startingSensorNumber; t < sensorNumber; t++)
    {
     if (count == 100) {
-      ayCalibrationValue[t] = ay[t];
+      aTotCalibrationValue[t] = aTot[t];
       if (t == sensorNumber-1) {
       count = 0;
       }
     }
     tcaselect(t);
     // read raw accel/gyro/mag measurements from device
-    accelGyroMag.getMotion9(&ax, &ay[t], &az, &gx, &gy, &gz, &mx, &my, &mz);  // or     accelGyroMag.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
-    ayCalibrated[t] = ay[t] - ayCalibrationValue[t];
+    accelGyroMag.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
+    aTot[t] = (ax + ay + az)/3;
+    aTotCalibrated[t] = aTot[t] - aTotCalibrationValue[t];
     //these methods (and a few others) are also available
     //accelGyroMag.getAcceleration(&ax, &ay, &az);
     //accelGyroMag.getRotation(&gx, &gy, &gz);
@@ -220,10 +213,10 @@ void loop() {
         // display tab-separated accel/gyro/mag x/y/z values
         //Serial.print("count: ");
         //Serial.print(count); Serial.print("\t");
-        Serial.print("ayCalibrated: ");
-        Serial.print(ayCalibrated[t]); Serial.print("\t");
-        Serial.print("ay: ");
-        Serial.print(ay[t]); Serial.print("\t");
+        Serial.print("aTotCalibrated: ");
+        Serial.print(aTotCalibrated[t]); Serial.print("\t");
+        //Serial.print("aTot: ");
+        //Serial.print(aTot[t]); Serial.print("\t");
         /*
         Serial.print("ay: ");
         Serial.print(ay); Serial.print("\t");
@@ -246,7 +239,7 @@ void loop() {
         
       #endif
     
-    if (ayCalibrated[t] > 1500) {
+    if (aTotCalibrated[t] > 700) {
       plantTouched[t] = 1;
     }
     if (plantTouched[t] == 1) {
@@ -316,6 +309,6 @@ endTime = millis();  // THIS DOESNT NECESSARILY MAKES SENSE -> DATAPOINTS ARENT 
 if (endTime - startTime < 33)
 {
   //delay(33 - (endTime - startTime));
-  delay(50);
+  //delay(20);
 }
 }
