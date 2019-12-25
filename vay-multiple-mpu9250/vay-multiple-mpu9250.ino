@@ -37,9 +37,9 @@ THE SOFTWARE.
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 75
+#define NUM_LEDS 120
 #define ACTIVE_LEDS 15
-#define BRIGHTNESS 128
+#define BRIGHTNESS 32
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -56,7 +56,7 @@ CRGB leds[NUM_LEDS];
 //=============================================================================
 //
 
-const int sensorNumber = 5;
+const int sensorNumber = 8;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
@@ -77,7 +77,9 @@ int count = 0;
 //#define BluetoothTransmit // uncomment this to not transmit via bluetooth
 
 // define Serial Output
-//#define SerialPrint  // uncomment this to not print in serial monitor
+#define SerialPrintSetup  // uncomment this to not print in serial monitor
+#define SerialPrintSensor// uncomment this to not print in serial monitor
+//#define SerialPrintLED// uncomment this to not print in serial monitor
 
 // define SD Card Logger
 //#define Adalogger  // uncomment this to not print on sd card
@@ -172,15 +174,18 @@ void setup() {
       Wire.write(0);     // set to zero (wakes up the MPU-6050)
       Wire.endTransmission(true);
       accelGyroMag.enableMag();
-    }
-  
-    // initialize device
-    //Serial.println("Initializing I2C devices...");
-    accelGyroMag.initialize();
+      #ifdef SerialPrintSetup
+      // initialize device
+      Serial.println("Initializing I2C devices...");
+        accelGyroMag.initialize();
+    
+        // verify connection
+        Serial.println("Testing device connections...");
+        Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
+      #endif
 
-    // verify connection
-    //Serial.println("Testing device connections...");
-    //Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
+    }
+   
 
     // configure Arduino LED for
     pinMode(LED_PIN, OUTPUT);
@@ -215,7 +220,7 @@ void loop() {
     //accelGyroMag.getAcceleration(&ax, &ay, &az);
     //accelGyroMag.getRotation(&gx, &gy, &gz);
     
-    #ifdef SerialPrint
+    #ifdef SerialPrintSensor
         // display tab-separated accel/gyro/mag x/y/z values
         //Serial.print("count: ");
         //Serial.print(count); Serial.print("\t");
@@ -272,7 +277,7 @@ void loop() {
        leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
        FastLED.show();
        
-       #ifdef SerialPrint
+       #ifdef SerialPrintLED
           Serial.print("LEDS: ");
           Serial.print(i+t*ACTIVE_LEDS); Serial.print("\t");
        #endif
@@ -288,7 +293,10 @@ void loop() {
       //Serial.print(darkness[t]); Serial.print("\t");
   }
   if(t == sensorNumber - 1) {
-    #ifdef SerialPrint
+    #ifdef SerialPrintSensor
+      Serial.println();
+    #endif
+        #ifdef SerialPrintLED
       Serial.println();
     #endif
 
