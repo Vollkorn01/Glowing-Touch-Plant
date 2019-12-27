@@ -30,18 +30,6 @@ THE SOFTWARE.
 */
 
 //=============================================================================
-//                                   SETUP
-//=============================================================================
-
-void setup() {
-
-   pinMode(13, OUTPUT);
-  digitalWrite(13, true);
-  delay(2000);
-  digitalWrite(13, false);
-}
-
-//=============================================================================
 //                            LED STUFF
 //=============================================================================
 //
@@ -50,7 +38,7 @@ void setup() {
 // How many leds to you want to activate in your strip?
 #define NUM_LEDS 120
 #define ACTIVE_LEDS 15
-#define BRIGHTNESS 32
+#define BRIGHTNESS 128
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -82,8 +70,8 @@ int randNumber = 1; // for changing colors
 //
 
 // define Serial Output
-#define SerialPrintSetup  // uncomment this to not print in serial monitor
-#define SerialPrintSensor// uncomment this to not print in serial monitor
+//#define SerialPrintSetup  // uncomment this to not print in serial monitor
+//#define SerialPrintSensor// uncomment this to not print in serial monitor
 //#define SerialPrintLED// uncomment this to not print in serial monitor
 // Labeling Initialization
 #define LED_PIN 13
@@ -126,7 +114,7 @@ uint8_t i=0; // reset for SD Card logging
 
 
 //=============================================================================
-//                                   LOOP
+//                                   SETUP
 //=============================================================================
 
 void setup() {
@@ -176,8 +164,9 @@ void setup() {
     digitalWrite(LED_PIN, true);
     delay(1000);
     digitalWrite(LED_PIN, false);
-    startup = false;
 }
+
+void loop() {
   
   startTime = millis();
   count ++;
