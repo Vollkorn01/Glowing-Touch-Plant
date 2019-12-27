@@ -48,9 +48,9 @@ void setup() {
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 105
+#define NUM_LEDS 120
 #define ACTIVE_LEDS 15
-#define BRIGHTNESS 64
+#define BRIGHTNESS 8
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -67,7 +67,7 @@ CRGB leds[NUM_LEDS];
 //=============================================================================
 //
 
-const int sensorNumber = 7;
+const int sensorNumber = 8;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
@@ -115,12 +115,7 @@ int16_t mx, my, mz;
 #define MPU_addr 0x68
 #define TCAADDR 0x70
 
-void tcaselect(uint8_t i) {
-  if (i > 7) return; 
-  Wire.beginTransmission(TCAADDR);
-  Wire.write(1 << i);
-  Wire.endTransmission(); 
-}
+#define LED_PIN 13
 bool blinkState = false;
 
 uint8_t i=0; // reset for SD Card logging
@@ -130,17 +125,7 @@ uint8_t i=0; // reset for SD Card logging
 //                                   LOOP
 //=============================================================================
 
-bool startup = true;
-
-void loop() {
-
-if (startup == true) {
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, true);
-  delay(1000);
-  digitalWrite(LED_PIN, false);
-
-
+void setup() {
   FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
   FastLED.setBrightness( BRIGHTNESS );
   
@@ -150,7 +135,7 @@ if (startup == true) {
   {
     darkness[x] = 255;
     plantTouched[x] = 0;
-    fadeAmount[x] = 5; 
+    fadeAmount[x] = 40; 
   }
 
   Serial.begin(38400);
@@ -164,22 +149,25 @@ if (startup == true) {
     Serial.println("wire began");
     for(int x = startingSensorNumber; x < sensorNumber; x++)
     {
-      tcaselect(x); // make a loop for all sensors here!
+      Wire.beginTransmission(TCAADDR);
+      Wire.write(1 << x);
+      Wire.endTransmission();       
       Wire.beginTransmission(MPU_addr);
       Wire.write(0x6B);  // PWR_MGMT_1 register
       Wire.write(0);     // set to zero (wakes up the MPU-6050)
       Wire.endTransmission(true);
       accelGyroMag.enableMag();
+      
+      // initialize device
+      //Serial.println("Initializing I2C devices...");
+      accelGyroMag.initialize();
+  
+      // verify connection
+      Serial.println("Testing device connections...");
+      Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
+      Serial.println(accelGyroMag.getMotionDetectionDuration());
     }
   
-    // initialize device
-    Serial.println("Initializing I2C devices...");
-    accelGyroMag.initialize();
-
-    // verify connection
-    Serial.println("Testing device connections...");
-    Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
-
     // configure Arduino LED for
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, true);
@@ -200,7 +188,9 @@ if (startup == true) {
       count = 0;
       }
     }
-    tcaselect(t);
+    Wire.beginTransmission(TCAADDR);
+    Wire.write(1 << t);
+    Wire.endTransmission();    
     // read raw accel/gyro/mag measurements from device
     accelGyroMag.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
     aTot[t] = (ax + ay + az)/3;
