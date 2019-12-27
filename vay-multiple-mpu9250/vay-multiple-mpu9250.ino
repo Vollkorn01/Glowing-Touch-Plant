@@ -50,7 +50,7 @@ void setup() {
 // How many leds to you want to activate in your strip?
 #define NUM_LEDS 120
 #define ACTIVE_LEDS 15
-#define BRIGHTNESS 8
+#define BRIGHTNESS 32
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -81,6 +81,10 @@ int randNumber = 1; // for changing colors
 //=============================================================================
 //
 
+// define Serial Output
+#define SerialPrintSetup  // uncomment this to not print in serial monitor
+#define SerialPrintSensor// uncomment this to not print in serial monitor
+//#define SerialPrintLED// uncomment this to not print in serial monitor
 // Labeling Initialization
 #define LED_PIN 13
 
@@ -157,15 +161,14 @@ void setup() {
       Wire.write(0);     // set to zero (wakes up the MPU-6050)
       Wire.endTransmission(true);
       accelGyroMag.enableMag();
-      
+      #ifdef SerialPrintSetup
       // initialize device
-      //Serial.println("Initializing I2C devices...");
-      accelGyroMag.initialize();
-  
-      // verify connection
-      Serial.println("Testing device connections...");
-      Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
-      Serial.println(accelGyroMag.getMotionDetectionDuration());
+      Serial.println("Initializing I2C devices...");
+        accelGyroMag.initialize();
+        // verify connection
+        Serial.println("Testing device connections...");
+        Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
+      #endif
     }
   
     // configure Arduino LED for
@@ -199,7 +202,7 @@ void setup() {
     //accelGyroMag.getAcceleration(&ax, &ay, &az);
     //accelGyroMag.getRotation(&gx, &gy, &gz);
     
-    #ifdef SerialPrint
+    #ifdef SerialPrintSensor
         // display tab-separated accel/gyro/mag x/y/z values
         //Serial.print("count: ");
         //Serial.print(count); Serial.print("\t");
@@ -268,7 +271,7 @@ void setup() {
        leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
        FastLED.show();
        
-       #ifdef SerialPrint
+       #ifdef SerialPrintLED
           Serial.print("LEDS: ");
           Serial.print(i+t*ACTIVE_LEDS); Serial.print("\t");
        #endif
@@ -284,7 +287,10 @@ void setup() {
       //Serial.print(darkness[t]); Serial.print("\t");
   }
   if(t == sensorNumber - 1) {
-    #ifdef SerialPrint
+    #ifdef SerialPrintSensor
+      Serial.println();
+    #endif
+        #ifdef SerialPrintLED
       Serial.println();
     #endif
 
