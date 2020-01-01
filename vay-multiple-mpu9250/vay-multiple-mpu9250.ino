@@ -127,7 +127,7 @@ void setup() {
   {
     darkness[x] = 255;
     plantTouched[x] = 0;
-    fadeAmount[x] = 40; 
+    fadeAmount[x] = 5; 
   }
 
   Serial.begin(38400);
@@ -258,7 +258,6 @@ void loop() {
        };
        
        leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
-       FastLED.show();
        
        #ifdef SerialPrintLED
           Serial.print("LEDS: ");
@@ -266,7 +265,7 @@ void loop() {
        #endif
       }
       
-      //FastLED.show();
+      FastLED.show();
 
       //Serial.print("i+t*NUM_LEDS: ");
       //Serial.print(i+t*NUM_LEDS); Serial.print("\t");
