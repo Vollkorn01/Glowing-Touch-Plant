@@ -36,7 +36,7 @@ THE SOFTWARE.
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 120
+#define NUM_LEDS 165
 #define ACTIVE_LEDS 15
 #define BRIGHTNESS 128
 
@@ -56,13 +56,11 @@ CRGB leds[NUM_LEDS];
 //
 
 // define 2 times since we have two multiplexer boards
-const int sensorNumber1 = 1;
-const int startingSensorNumber1 = 0; //starts at 0
-const int sensorNumber2 = 1;
-const int startingSensorNumber2 = 0; //starts at 0
-int darkness[sensorNumber1];
-int plantTouched[sensorNumber1];
-int fadeAmount[sensorNumber1];  // Set the amount to fade I usually do 5, 10, 15, 20, 25 etc even up to 255.
+const int sensorNumber = 11;
+const int startingSensorNumber = 0; //starts at 0
+int darkness[sensorNumber];
+int plantTouched[sensorNumber];
+int fadeAmount[sensorNumber];  // Set the amount to fade I usually do 5, 10, 15, 20, 25 etc even up to 255.
 int count = 0;
 int randNumber = 1; // for changing colors
 
@@ -73,7 +71,7 @@ int randNumber = 1; // for changing colors
 //
 
 // define Serial Output
-//#define SerialPrintSetup  // uncomment this to not print in serial monitor
+#define SerialPrintSetup  // uncomment this to not print in serial monitor
 #define SerialPrintSensor// uncomment this to not print in serial monitor
 //#define SerialPrintLED// uncomment this to not print in serial monitor
 // Labeling Initialization
@@ -100,17 +98,19 @@ int endTime;
 // AD0 high = 0x69
 MPU9150 accelGyroMag;
 
-int16_t ax, ay, az, aTot[sensorNumber1];
-int16_t aTotCalibrated[sensorNumber1];
-int16_t aTotCalibrationValue[sensorNumber1];
+int16_t ax, ay, az, aTot[sensorNumber];
+int16_t aTotCalibrated[sensorNumber];
+int16_t aTotCalibrationValue[sensorNumber];
 int16_t gx, gy, gz;
 int16_t mx, my, mz;
 
 // i2xmux init
 #define MPU_addr 0x68
-#define TCAADDR1 0x70 //multiplexer 1
-#define TCAADDR2 0x71 //multiplexer 2
-
+byte TCAADDR1 = 112; //multiplexer 1
+byte TCAADDR2 = 113; //multiplexer 2
+byte activeMultiplexer = TCAADDR1; // inactive and active will switch in code
+byte inActiveMultiplexer = TCAADDR2;
+int activeSensor;
 
 #define LED_PIN 13
 bool blinkState = false;
@@ -128,11 +128,11 @@ void setup() {
   
   // initialize sensor variables
   
-  for(int x = startingSensorNumber1; x < sensorNumber1; x++)
+  for(int x = startingSensorNumber; x < sensorNumber; x++)
   {
     darkness[x] = 255;
     plantTouched[x] = 0;
-    fadeAmount[x] = 40; 
+    fadeAmount[x] = 5; 
   }
 
   Serial.begin(38400);
@@ -146,30 +146,28 @@ void setup() {
     #ifdef SerialPrintSetup
       Serial.println("wire began");
     #endif
-    for(int x = startingSensorNumber1; x < sensorNumber1; x++)
-    {
-      Wire.beginTransmission(TCAADDR1);
-      Wire.write(1 << x);
-      Wire.endTransmission();       
-      Wire.beginTransmission(MPU_addr);
-      Wire.write(0x6B);  // PWR_MGMT_1 register
-      Wire.write(0);     // set to zero (wakes up the MPU-6050)
-      Wire.endTransmission(true);
-      accelGyroMag.enableMag();
-      #ifdef SerialPrintSetup
-      // initialize device
-      Serial.println("Initializing I2C devices...");
-        accelGyroMag.initialize();
-        // verify connection
-        Serial.println("Testing device connections...");
-        Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
-      #endif
-    }
 
-        for(int x = startingSensorNumber2; x < sensorNumber2; x++)
+     byte activeMultiplexer = TCAADDR1;
+     byte inActiveMultiplexer = TCAADDR2;
+    
+    for(int x = startingSensorNumber; x < sensorNumber; x++)
     {
-      Wire.beginTransmission(TCAADDR2);
-      Wire.write(1 << x);
+      activeSensor = x;
+      if (x > 8) {
+        activeMultiplexer = TCAADDR2;
+        inActiveMultiplexer = TCAADDR1;
+        activeSensor = activeSensor - 8; // so we can start at 1 again for 2nd multiplexer board
+      } else {
+      activeMultiplexer = TCAADDR1;
+      inActiveMultiplexer = TCAADDR2;
+    }
+      
+      Wire.beginTransmission(inActiveMultiplexer);
+      Wire.write(0);
+      Wire.endTransmission(); 
+      
+      Wire.beginTransmission(activeMultiplexer);
+      Wire.write(1 << activeSensor);
       Wire.endTransmission();       
       Wire.beginTransmission(MPU_addr);
       Wire.write(0x6B);  // PWR_MGMT_1 register
@@ -199,16 +197,32 @@ void loop() {
   count ++;
 
  // reads sensor data and turns on leds from sensors in multiplexer 1
- for (int t = startingSensorNumber1; t < sensorNumber1; t++)
+ for (int t = startingSensorNumber; t < sensorNumber; t++)
    {
     if (count == 100) {
       aTotCalibrationValue[t] = aTot[t];
-      if (t == sensorNumber1-1) {
+      if (t == sensorNumber-1) {
       count = 0;
       }
     }
-    Wire.beginTransmission(TCAADDR1);
-    Wire.write(1 << t);
+
+    activeSensor = t;
+    if (t > 8) {
+      activeMultiplexer = TCAADDR2;
+      inActiveMultiplexer = TCAADDR1;
+      activeSensor = activeSensor - 8; // so we can start at 1 again for 2nd multiplexer board
+    } else {
+      activeMultiplexer = TCAADDR1;
+      inActiveMultiplexer = TCAADDR2;
+    }
+
+    
+    Wire.beginTransmission(inActiveMultiplexer); // disable multiplexer board 2, so no address conflict
+    Wire.write(0);
+    Wire.endTransmission();   
+    
+    Wire.beginTransmission(activeMultiplexer); // enable multiplexer board 1
+    Wire.write(1 << activeSensor);
     Wire.endTransmission();    
     // read raw accel/gyro/mag measurements from device
     accelGyroMag.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
@@ -222,7 +236,7 @@ void loop() {
         // display tab-separated accel/gyro/mag x/y/z values
         //Serial.print("count: ");
         //Serial.print(count); Serial.print("\t");
-        Serial.print("1: ");
+        Serial.print("aTotCalibrated: ");
         Serial.print(aTotCalibrated[t]); Serial.print("\t");
         //Serial.print("aTot: ");
         //Serial.print(aTot[t]); Serial.print("\t");
@@ -285,7 +299,6 @@ void loop() {
        };
        
        leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
-       FastLED.show();
        
        #ifdef SerialPrintLED
           Serial.print("LEDS: ");
@@ -293,120 +306,7 @@ void loop() {
        #endif
       }
       
-      //FastLED.show();
-
-      //Serial.print("i+t*NUM_LEDS: ");
-      //Serial.print(i+t*NUM_LEDS); Serial.print("\t");
-      //Serial.print("plantTouched: ");
-      //Serial.print(plantTouched[t]); Serial.print("\t");
-      //Serial.print("darkness: ");
-      //Serial.print(darkness[t]); Serial.print("\t");
-  }
-}
-
- // reads sensor data and turns on leds from sensors in multiplexer 2
- for (int t = startingSensorNumber2; t < sensorNumber2; t++)
-   {
-    if (count == 100) {
-      aTotCalibrationValue[t] = aTot[t];
-      if (t == sensorNumber2-1) {
-      count = 0;
-      }
-    }
-    Wire.beginTransmission(TCAADDR2);
-    Wire.write(1 << t);
-    Wire.endTransmission();    
-    // read raw accel/gyro/mag measurements from device
-    accelGyroMag.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
-    aTot[t] = (ax + ay + az)/3;
-    aTotCalibrated[t] = aTot[t] - aTotCalibrationValue[t];
-    //these methods (and a few others) are also available
-    //accelGyroMag.getAcceleration(&ax, &ay, &az);
-    //accelGyroMag.getRotation(&gx, &gy, &gz);
-    
-    #ifdef SerialPrintSensor
-        // display tab-separated accel/gyro/mag x/y/z values
-        //Serial.print("count: ");
-        //Serial.print(count); Serial.print("\t");
-        Serial.print("2: ");
-        Serial.print(aTotCalibrated[t]); Serial.print("\t");
-        //Serial.print("aTot: ");
-        //Serial.print(aTot[t]); Serial.print("\t");
-        /*
-        Serial.print("ay: ");
-        Serial.print(ay); Serial.print("\t");
-       
-        Serial.print("ax: ");
-        Serial.print(ax); Serial.print("\t");
-        Serial.print("ay: ");
-        Serial.print(ay); Serial.print("\t");
-        Serial.print("az: ");
-        Serial.print(az); Serial.print("\t");
-        Serial.print("tot: ");
-        Serial.print(ax+ay+az); Serial.print("\t");
-        */
-        //Serial.print(gx); Serial.print("\t");
-        //Serial.print(gy); Serial.print("\t");
-        //Serial.print(gz); Serial.print("\t");
-        //Serial.print(int(mx)); Serial.print("\t");
-        //Serial.print(int(my)); Serial.print("\t");
-        //Serial.print(int(mz)); Serial.print("\t");
-        
-      #endif
-    
-    if (aTotCalibrated[t] > 700) {
-      plantTouched[t] = 1;
-    }
-    if (plantTouched[t] == 1) {
-    
-      darkness[t] = darkness[t] - fadeAmount[t];
-      // reverse the direction of the fading at the ends of the fade:
-      if( darkness[t] <= 0) {
-        fadeAmount[t] = -fadeAmount[t] ;
-        darkness[t] = 0;
-      }
-      if (darkness[t] > 255) {
-        plantTouched[t] = 0;
-        darkness[t] = 255;
-        fadeAmount[t] = -fadeAmount[t];
-        randNumber = random(1,5); // randomly 1,2 or 3, for chaning colors
-      }
-       for(int i = 0; i < ACTIVE_LEDS; i++ )
-       {
-       switch (randNumber) {
-        case 1:
-          leds[i+t*ACTIVE_LEDS].setRGB(0,255,255); //pink
-          break;
-        case 2:
-          leds[i+t*ACTIVE_LEDS].setRGB(255,255,255); //white
-          break;
-        case 3:
-          leds[i+t*ACTIVE_LEDS].setRGB(0,0,255); //blue
-          break;
-        case 4:
-          leds[i+t*ACTIVE_LEDS].setRGB(0,255,0); //red
-          break;
-         
-        
-       };
-       
-       leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
-       FastLED.show();
-       
-       #ifdef SerialPrintLED
-          Serial.print("LEDS: ");
-          Serial.print(i+t*ACTIVE_LEDS); Serial.print("\t");
-       #endif
-      }
-      
-      //FastLED.show();
-
-      //Serial.print("i+t*NUM_LEDS: ");
-      //Serial.print(i+t*NUM_LEDS); Serial.print("\t");
-      //Serial.print("plantTouched: ");
-      //Serial.print(plantTouched[t]); Serial.print("\t");
-      //Serial.print("darkness: ");
-      //Serial.print(darkness[t]); Serial.print("\t");
+      FastLED.show();
   }
 }
 
