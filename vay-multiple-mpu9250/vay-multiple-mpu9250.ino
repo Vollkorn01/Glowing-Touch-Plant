@@ -56,7 +56,7 @@ CRGB leds[NUM_LEDS];
 //=============================================================================
 //
 
-const int sensorNumber = 8;
+const int sensorNumber = 2;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
@@ -77,7 +77,7 @@ int count = 0;
 //#define BluetoothTransmit // uncomment this to not transmit via bluetooth
 
 // define Serial Output
-//#define SerialPrint  // uncomment this to not print in serial monitor
+#define SerialPrint  // uncomment this to not print in serial monitor
 
 // define SD Card Logger
 //#define Adalogger  // uncomment this to not print on sd card
@@ -268,7 +268,6 @@ void loop() {
                                  // RED = setRGB(255,0,0)
                                  // GREEN = setRGB(0,255,0)
        leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
-       FastLED.show();
        
        #ifdef SerialPrint
           Serial.print("LEDS: ");
@@ -276,7 +275,8 @@ void loop() {
        #endif
       }
       
-      //FastLED.show();
+      FastLED.show();
+      Serial.println("Hello From Arduino!");
 
       //Serial.print("i+t*NUM_LEDS: ");
       //Serial.print(i+t*NUM_LEDS); Serial.print("\t");
