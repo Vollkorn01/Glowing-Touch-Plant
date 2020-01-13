@@ -35,10 +35,10 @@ THE SOFTWARE.
 //
 #include <FastLED.h>
 
-// How many leds to you want to activate in your strip?
-#define NUM_LEDS 165
+// How many leds do you want to activate in your strip?
+#define NUM_LEDS 225
 #define ACTIVE_LEDS 15
-#define BRIGHTNESS 128
+#define BRIGHTNESS 64
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -56,7 +56,7 @@ CRGB leds[NUM_LEDS];
 //
 
 // define 2 times since we have two multiplexer boards
-const int sensorNumber = 11;
+const int sensorNumber = 14;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
@@ -72,8 +72,9 @@ int randNumber = 1; // for changing colors
 
 // define Serial Output
 #define SerialPrintSetup  // uncomment this to not print in serial monitor
-#define SerialPrintSensor// uncomment this to not print in serial monitor
+//#define SerialPrintSensor// uncomment this to not print in serial monitor
 //#define SerialPrintLED// uncomment this to not print in serial monitor
+//#define SerialPrintSound //sends string to raspberry over serial, where sound is played
 // Labeling Initialization
 #define LED_PIN 13
 
@@ -132,7 +133,7 @@ void setup() {
   {
     darkness[x] = 255;
     plantTouched[x] = 0;
-    fadeAmount[x] = 5; 
+    fadeAmount[x] = 40; 
   }
 
   Serial.begin(38400);
@@ -253,7 +254,9 @@ void loop() {
         Serial.print("tot: ");
         Serial.print(ax+ay+az); Serial.print("\t");
         */
+        //Serial.print("gx: ");
         //Serial.print(gx); Serial.print("\t");
+        //Serial.print("gy: ");
         //Serial.print(gy); Serial.print("\t");
         //Serial.print(gz); Serial.print("\t");
         //Serial.print(int(mx)); Serial.print("\t");
@@ -263,9 +266,15 @@ void loop() {
       #endif
     
     if (aTotCalibrated[t] > 700) {
+      Serial.print("sensorNumber ");
+      Serial.println(t);
       plantTouched[t] = 1;
     }
     if (plantTouched[t] == 1) {
+      //play sound on raspberry
+      #ifdef SerialPrintSound
+        Serial.println("starsound_c");
+      #endif
     
       darkness[t] = darkness[t] - fadeAmount[t];
       // reverse the direction of the fading at the ends of the fade:
@@ -305,8 +314,7 @@ void loop() {
           Serial.print(i+t*ACTIVE_LEDS); Serial.print("\t");
        #endif
       }
-      
-      FastLED.show();
+        FastLED.show();
   }
 }
 
