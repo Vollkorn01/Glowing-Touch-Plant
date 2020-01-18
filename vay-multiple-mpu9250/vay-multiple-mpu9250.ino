@@ -36,7 +36,7 @@ THE SOFTWARE.
 #include <FastLED.h>
 
 // How many leds to you want to activate in your strip?
-#define NUM_LEDS 120
+#define NUM_LEDS 250
 #define ACTIVE_LEDS 15
 #define BRIGHTNESS 128
 
@@ -71,7 +71,7 @@ int randNumber = 1; // for changing colors
 
 // define Serial Output
 //#define SerialPrintSetup  // uncomment this to not print in serial monitor
-//#define SerialPrintSensor// uncomment this to not print in serial monitor
+#define SerialPrintSensor// uncomment this to not print in serial monitor
 //#define SerialPrintLED// uncomment this to not print in serial monitor
 // Labeling Initialization
 #define LED_PIN 13
@@ -105,7 +105,7 @@ int16_t mx, my, mz;
 
 // i2xmux init
 #define MPU_addr 0x68
-#define TCAADDR 0x70
+#define TCAADDR 0x71
 
 #define LED_PIN 13
 bool blinkState = false;
@@ -242,16 +242,16 @@ void loop() {
        {
        switch (randNumber) {
         case 1:
-          leds[i+t*ACTIVE_LEDS].setRGB(0,255,255); //pink
+          leds[i+(t+8)*ACTIVE_LEDS].setRGB(0,255,255); //pink
           break;
         case 2:
-          leds[i+t*ACTIVE_LEDS].setRGB(255,255,255); //white
+          leds[i+(t+8)*ACTIVE_LEDS].setRGB(255,255,255); //white
           break;
         case 3:
-          leds[i+t*ACTIVE_LEDS].setRGB(0,0,255); //blue
+          leds[i+(t+8)*ACTIVE_LEDS].setRGB(0,0,255); //blue
           break;
         case 4:
-          leds[i+t*ACTIVE_LEDS].setRGB(0,255,0); //red
+          leds[i+(t+8)*ACTIVE_LEDS].setRGB(0,255,0); //red
           break;
          
         
