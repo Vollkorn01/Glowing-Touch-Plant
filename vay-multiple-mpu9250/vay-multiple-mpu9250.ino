@@ -38,7 +38,7 @@ THE SOFTWARE.
 // How many leds do you want to activate in your strip?
 #define NUM_LEDS 225
 #define ACTIVE_LEDS 15
-#define BRIGHTNESS 64
+#define BRIGHTNESS 128
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -56,7 +56,7 @@ CRGB leds[NUM_LEDS];
 //
 
 // define 2 times since we have two multiplexer boards
-const int sensorNumber = 14;
+const int sensorNumber = 15;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
@@ -72,7 +72,9 @@ int randNumber = 1; // for changing colors
 
 // define Serial Output
 #define SerialPrintSetup  // uncomment this to not print in serial monitor
-//#define SerialPrintSensor// uncomment this to not print in serial monitor
+#define SerialPrintSensor// uncomment this to not print in serial monitor
+//#define SerialPrintDebug// uncomment this to not print in serial monitor
+
 //#define SerialPrintLED// uncomment this to not print in serial monitor
 //#define SerialPrintSound //sends string to raspberry over serial, where sound is played
 // Labeling Initialization
@@ -154,10 +156,15 @@ void setup() {
     for(int x = startingSensorNumber; x < sensorNumber; x++)
     {
       activeSensor = x;
-      if (x > 8) {
+      if (x > 7) {
         activeMultiplexer = TCAADDR2;
         inActiveMultiplexer = TCAADDR1;
         activeSensor = activeSensor - 8; // so we can start at 1 again for 2nd multiplexer board
+        
+        #ifdef SerialPrintDebug
+          Serial.print("activeSensor: ");
+          Serial.println(activeSensor);
+        #endif
       } else {
       activeMultiplexer = TCAADDR1;
       inActiveMultiplexer = TCAADDR2;
@@ -208,7 +215,7 @@ void loop() {
     }
 
     activeSensor = t;
-    if (t > 8) {
+    if (t > 7) {
       activeMultiplexer = TCAADDR2;
       inActiveMultiplexer = TCAADDR1;
       activeSensor = activeSensor - 8; // so we can start at 1 again for 2nd multiplexer board
@@ -266,8 +273,10 @@ void loop() {
       #endif
     
     if (aTotCalibrated[t] > 700) {
-      Serial.print("sensorNumber ");
-      Serial.println(t);
+      #ifdef SerialPrintDebug
+        Serial.print("sensorNumber ");
+        Serial.println(t);
+      #endif
       plantTouched[t] = 1;
     }
     if (plantTouched[t] == 1) {
