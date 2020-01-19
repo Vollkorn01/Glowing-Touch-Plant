@@ -38,7 +38,7 @@ THE SOFTWARE.
 // How many leds do you want to activate in your strip?
 #define NUM_LEDS 225
 #define ACTIVE_LEDS 15
-#define BRIGHTNESS 32
+#define BRIGHTNESS 128
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -56,7 +56,7 @@ CRGB leds[NUM_LEDS];
 //
 
 // define 2 times since we have two multiplexer boards
-const int sensorNumber = 6;
+const int sensorNumber = 15;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
@@ -79,10 +79,6 @@ int shift = 0; // since not every led strip has same length, we need to shift
 //#define SerialPrintSound //sends string to raspberry over serial, where sound is played
 // Labeling Initialization
 #define LED_PIN 13
-
-// Timing init
-int startTime;
-int endTime;
 
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
@@ -139,10 +135,7 @@ void setup() {
   }
 
   Serial.begin(38400);
-  //Serial.println("test with init");
-  //Serial1.begin(38400);   
   delay(300);                                                            
-  //Serial.println("\r\nAnalog logger test");
 
     // join I2C bus (I2Cdev library doesn't do this automatically)
     Wire.begin();
@@ -164,39 +157,48 @@ void setup() {
       activeMultiplexer = TCAADDR1;
       inActiveMultiplexer = TCAADDR2;
     }
-      
-      Wire.beginTransmission(inActiveMultiplexer);
-      Wire.write(0);
-      Wire.endTransmission(); 
-      
-      Wire.beginTransmission(activeMultiplexer);
-      Wire.write(1 << activeSensor);
-      Wire.endTransmission();       
-      Wire.beginTransmission(MPU_addr);
-      Wire.write(0x6B);  // PWR_MGMT_1 register
-      Wire.write(0);     // set to zero (wakes up the MPU-6050)
-      Wire.endTransmission(true);
-      accelGyroMag.enableMag();
-      #ifdef SerialPrintSetup
-      // initialize device
-      Serial.println("Initializing I2C devices...");
-        accelGyroMag.initialize();
-        // verify connection
-        Serial.println("Testing device connections...");
-        Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
-      #endif
-    }
-  
-    // configure Arduino LED for
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, true);
-    delay(1000);
-    digitalWrite(LED_PIN, false);
+    
+    #ifdef SerialPrintSetup
+      Serial.println("Wire.beginTransmission inActiveMultiplexer");
+    #endif
+    
+    Wire.beginTransmission(inActiveMultiplexer);
+    Wire.write(0);
+    Wire.endTransmission(); 
+    #ifdef SerialPrintSetup
+      Serial.println("Wire.beginTransmission activeMultiplexer");
+    #endif
+    
+    Wire.beginTransmission(activeMultiplexer);
+    Wire.write(1 << activeSensor);
+    Wire.endTransmission();       
+    Wire.beginTransmission(MPU_addr);
+    Wire.write(0x6B);  // PWR_MGMT_1 register
+    Wire.write(0);     // set to zero (wakes up the MPU-6050)
+    Wire.endTransmission(true);
+    #ifdef SerialPrintSetup
+      Serial.println("accelGyroMag.enableMag");
+    #endif
+    accelGyroMag.enableMag();
+    #ifdef SerialPrintSetup
+    // initialize device
+    Serial.println("Initializing I2C devices...");
+      accelGyroMag.initialize();
+      // verify connection
+      Serial.println("Testing device connections...");
+      Serial.println(accelGyroMag.testConnection() ? "MPU9150 connection successful" : "MPU9150 connection failed");
+    #endif
+  }
+
+  // configure Arduino LED for
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, true);
+  delay(1000);
+  digitalWrite(LED_PIN, false);
 }
 
 void loop() {
   
-  startTime = millis();
   count ++;
 
  // reads sensor data and turns on leds from sensors in multiplexer 1
@@ -396,11 +398,4 @@ void loop() {
 // blink LED to indicate activity
 blinkState = !blinkState;
 digitalWrite(LED_PIN, blinkState);
-
-endTime = millis();  // THIS DOESNT NECESSARILY MAKES SENSE -> DATAPOINTS ARENT LINEARLY DISTRIBUTED
-if (endTime - startTime < 33)
-{
-  //delay(33 - (endTime - startTime));
-  //delay(20);
-}
 }
