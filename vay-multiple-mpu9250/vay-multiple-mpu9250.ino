@@ -38,7 +38,7 @@ THE SOFTWARE.
 // How many leds do you want to activate in your strip?
 #define NUM_LEDS 225
 #define ACTIVE_LEDS 15
-#define BRIGHTNESS 128
+#define BRIGHTNESS 32
 
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
@@ -56,13 +56,14 @@ CRGB leds[NUM_LEDS];
 //
 
 // define 2 times since we have two multiplexer boards
-const int sensorNumber = 15;
+const int sensorNumber = 6;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
 int fadeAmount[sensorNumber];  // Set the amount to fade I usually do 5, 10, 15, 20, 25 etc even up to 255.
 int count = 0;
 int randNumber = 1; // for changing colors
+int shift = 0; // since not every led strip has same length, we need to shift
 
 
 //=============================================================================
@@ -72,9 +73,8 @@ int randNumber = 1; // for changing colors
 
 // define Serial Output
 #define SerialPrintSetup  // uncomment this to not print in serial monitor
-#define SerialPrintSensor// uncomment this to not print in serial monitor
-//#define SerialPrintDebug// uncomment this to not print in serial monitor
-
+//#define SerialPrintSensor// uncomment this to not print in serial monitor
+#define SerialPrintDebug // uncomment this to not print in serial monitor
 //#define SerialPrintLED// uncomment this to not print in serial monitor
 //#define SerialPrintSound //sends string to raspberry over serial, where sound is played
 // Labeling Initialization
@@ -160,11 +160,6 @@ void setup() {
         activeMultiplexer = TCAADDR2;
         inActiveMultiplexer = TCAADDR1;
         activeSensor = activeSensor - 8; // so we can start at 1 again for 2nd multiplexer board
-        
-        #ifdef SerialPrintDebug
-          Serial.print("activeSensor: ");
-          Serial.println(activeSensor);
-        #endif
       } else {
       activeMultiplexer = TCAADDR1;
       inActiveMultiplexer = TCAADDR2;
@@ -295,32 +290,95 @@ void loop() {
         plantTouched[t] = 0;
         darkness[t] = 255;
         fadeAmount[t] = -fadeAmount[t];
-        randNumber = random(1,5); // randomly 1,2 or 3, for chaning colors
+        randNumber = random(1,5); // randomly 1,2 or 3, for changing colors
       }
-       for(int i = 0; i < ACTIVE_LEDS; i++ )
+      int startingLedNumber = 0;
+      int activeLeds = 0;
+      switch (t) {
+        case 0:
+          startingLedNumber = 0;
+          activeLeds = 15;
+          break;
+         case 1:
+          startingLedNumber = 15;
+          activeLeds = 15;
+          break;
+        case 2:
+          startingLedNumber = 30;
+          activeLeds = 15;
+          break;
+        case 3:
+          startingLedNumber = 45;
+          activeLeds = 15;
+          break;
+        case 4:
+          startingLedNumber = 60;
+          activeLeds = 15;
+          break;
+        case 5:
+          startingLedNumber = 75;
+          activeLeds = 15;
+          break;
+        case 6:
+          startingLedNumber = 90;
+          activeLeds = 14;
+          break;
+        case 7:
+          startingLedNumber = 105;
+          activeLeds = 14;
+          break;
+        case 8:
+          startingLedNumber = 119;
+          activeLeds = 15;
+          break;
+        case 9:
+          startingLedNumber = 134;
+          activeLeds = 14;
+          break;
+        case 10:
+          startingLedNumber = 148;
+          activeLeds = 15;
+          break;
+        case 11:
+          startingLedNumber = 163;
+          activeLeds = 14;
+          break;
+        case 12:
+          startingLedNumber = 177;
+          activeLeds = 15;
+          break;
+        case 13:
+          startingLedNumber = 192;
+          activeLeds = 13;
+          break;
+        case 14:
+          startingLedNumber = 205;
+          activeLeds = 15;
+          break;
+      };
+     
+       for(int i = 0; i < activeLeds; i++ )
        {
        switch (randNumber) {
         case 1:
-          leds[i+t*ACTIVE_LEDS].setRGB(0,255,255); //pink
+          leds[i+startingLedNumber].setRGB(0,255,255); //pink
           break;
         case 2:
-          leds[i+t*ACTIVE_LEDS].setRGB(255,255,255); //white
+          leds[i+startingLedNumber].setRGB(255,255,255); //white
           break;
         case 3:
-          leds[i+t*ACTIVE_LEDS].setRGB(0,0,255); //blue
+          leds[i+startingLedNumber].setRGB(0,0,255); //blue
           break;
         case 4:
-          leds[i+t*ACTIVE_LEDS].setRGB(0,255,0); //red
+          leds[i+startingLedNumber].setRGB(0,255,0); //red
           break;
-         
-        
        };
        
-       leds[i+t*ACTIVE_LEDS].fadeLightBy(darkness[t]);
-       
+       leds[i+startingLedNumber].fadeLightBy(darkness[t]);
+       //shift = 0;
        #ifdef SerialPrintLED
           Serial.print("LEDS: ");
-          Serial.print(i+t*ACTIVE_LEDS); Serial.print("\t");
+          Serial.print(i+startingLedNumber); Serial.print("\t");
        #endif
       }
         FastLED.show();
