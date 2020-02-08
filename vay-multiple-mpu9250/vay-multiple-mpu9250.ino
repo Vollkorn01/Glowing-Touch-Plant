@@ -61,8 +61,9 @@ const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
 int fadeAmount[sensorNumber];  // Set the amount to fade I usually do 5, 10, 15, 20, 25 etc even up to 255.
+int colorStep = 1;
+int invert = 1;
 int count = 0;
-int randNumber = 1; // for changing colors
 int shift = 0; // since not every led strip has same length, we need to shift
 
 
@@ -72,9 +73,9 @@ int shift = 0; // since not every led strip has same length, we need to shift
 //
 
 // define Serial Output
-#define SerialPrintSetup  // uncomment this to not print in serial monitor
-#define SerialPrintSensor// uncomment this to not print in serial monitor
-#define SerialPrintDebug // uncomment this to not print in serial monitor
+//#define SerialPrintSetup  // uncomment this to not print in serial monitor
+//#define SerialPrintSensor// uncomment this to not print in serial monitor
+//#define SerialPrintDebug // uncomment this to not print in serial monitor
 //#define SerialPrintLED// uncomment this to not print in serial monitor
 //#define SerialPrintSound //sends string to raspberry over serial, where sound is played
 // Labeling Initialization
@@ -100,8 +101,6 @@ MPU9150 accelGyroMag;
 int16_t ax, ay, az, aTot[sensorNumber];
 int16_t aTotCalibrated[sensorNumber];
 int16_t aTotCalibrationValue[sensorNumber];
-int16_t gx, gy, gz;
-int16_t mx, my, mz;
 
 // i2xmux init
 #define MPU_addr 0x68
@@ -131,7 +130,7 @@ void setup() {
   {
     darkness[x] = 255;
     plantTouched[x] = 0;
-    fadeAmount[x] = 40; 
+    fadeAmount[x] = 20; 
   }
 
   Serial.begin(38400);
@@ -143,8 +142,8 @@ void setup() {
       Serial.println("wire began");
     #endif
 
-     byte activeMultiplexer = TCAADDR1;
-     byte inActiveMultiplexer = TCAADDR2;
+    byte activeMultiplexer = TCAADDR1;
+    byte inActiveMultiplexer = TCAADDR2;
     
     for(int x = startingSensorNumber; x < sensorNumber; x++)
     {
@@ -227,7 +226,7 @@ void loop() {
     Wire.write(1 << activeSensor);
     Wire.endTransmission();    
     // read raw accel/gyro/mag measurements from device
-    accelGyroMag.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
+    accelGyroMag.getAcceleration(&ax, &ay, &az);
     aTot[t] = (ax + ay + az)/3;
     aTotCalibrated[t] = aTot[t] - aTotCalibrationValue[t];
     //these methods (and a few others) are also available
@@ -289,7 +288,6 @@ void loop() {
         plantTouched[t] = 0;
         darkness[t] = 255;
         fadeAmount[t] = -fadeAmount[t];
-        randNumber = random(1,5); // randomly 1,2 or 3, for changing colors
       }
       int startingLedNumber = 0;
       int activeLeds = 0;
@@ -358,20 +356,14 @@ void loop() {
      
        for(int i = 0; i < activeLeds; i++ )
        {
-       switch (randNumber) {
-        case 1:
-          leds[i+startingLedNumber].setRGB(0,255,255); //pink
-          break;
-        case 2:
-          leds[i+startingLedNumber].setRGB(255,255,255); //white
-          break;
-        case 3:
-          leds[i+startingLedNumber].setRGB(0,0,255); //blue
-          break;
-        case 4:
-          leds[i+startingLedNumber].setRGB(0,255,0); //red
-          break;
-       };
+       //smoothly change colors 
+       leds[i+startingLedNumber].setRGB(0,int(colorStep/4),int((255-colorStep)/4));
+       if (colorStep >= 994) {
+        invert *= -1;
+       } else if (colorStep < 1) {
+        invert *= -1;
+       }
+       colorStep += invert;
        
        leds[i+startingLedNumber].fadeLightBy(darkness[t]);
        //shift = 0;
@@ -380,7 +372,7 @@ void loop() {
           Serial.print(i+startingLedNumber); Serial.print("\t");
        #endif
       }
-        FastLED.show();
+      FastLED.show();
   }
 }
 
