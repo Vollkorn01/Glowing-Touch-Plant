@@ -56,7 +56,7 @@ CRGB leds[NUM_LEDS];
 //
 
 // define 2 times since we have two multiplexer boards
-const int sensorNumber = 15;
+const int sensorNumber = 16;
 const int startingSensorNumber = 0; //starts at 0
 int darkness[sensorNumber];
 int plantTouched[sensorNumber];
@@ -73,7 +73,7 @@ int shift = 0; // since not every led strip has same length, we need to shift
 
 // define Serial Output
 #define SerialPrintSetup  // uncomment this to not print in serial monitor
-//#define SerialPrintSensor// uncomment this to not print in serial monitor
+#define SerialPrintSensor// uncomment this to not print in serial monitor
 #define SerialPrintDebug // uncomment this to not print in serial monitor
 //#define SerialPrintLED// uncomment this to not print in serial monitor
 //#define SerialPrintSound //sends string to raspberry over serial, where sound is played
@@ -165,9 +165,6 @@ void setup() {
     Wire.beginTransmission(inActiveMultiplexer);
     Wire.write(0);
     Wire.endTransmission(); 
-    #ifdef SerialPrintSetup
-      Serial.println("Wire.beginTransmission activeMultiplexer");
-    #endif
     
     Wire.beginTransmission(activeMultiplexer);
     Wire.write(1 << activeSensor);
