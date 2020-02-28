@@ -216,7 +216,6 @@ void loop() {
       activeMultiplexer = TCAADDR1;
       inActiveMultiplexer = TCAADDR2;
     }
-
     
     Wire.beginTransmission(inActiveMultiplexer); // disable multiplexer board 2, so no address conflict
     Wire.write(0);
@@ -357,13 +356,12 @@ void loop() {
        for(int i = 0; i < activeLeds; i++ )
        {
        //smoothly change colors 
-       leds[i+startingLedNumber].setRGB(0,int(colorStep/4),int((255-colorStep)/4));
-       if (colorStep >= 994) {
+       leds[i+startingLedNumber].setRGB(0,int(colorStep),int((255-colorStep)));
+       if (colorStep >= 240) {
         invert *= -1;
        } else if (colorStep < 1) {
         invert *= -1;
        }
-       colorStep += invert;
        
        leds[i+startingLedNumber].fadeLightBy(darkness[t]);
        //shift = 0;
@@ -374,6 +372,7 @@ void loop() {
       }
       FastLED.show();
   }
+  colorStep += invert;
 }
 
 #ifdef SerialPrintSensor
